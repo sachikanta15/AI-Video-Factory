@@ -1,6 +1,7 @@
 import { query, type Options, type SDKResultMessage, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { LocalizedError, modelFor, msg, type ModelSettings, type Msg, type Text } from "@ys/core";
 import { z } from "zod";
+import { runGeminiStructured } from "./gemini.ts";
 
 export type QueryFn = typeof query;
 
@@ -178,9 +179,11 @@ export async function runStructured<T>(call: AgentCall<T>, deps: AgentDeps = {})
 }
 
 async function runOnce<T>(call: AgentCall<T>, deps: AgentDeps): Promise<AgentResult<T>> {
-  const queryFn = deps.queryFn ?? query;
-  const model = modelFor(call.name, call.model, deps.models);
+  const backend = process.env.YS_AGENT_BACKEND?.trim().toLowerCase();
+  const model = backend === "gemini" ? process.env.GEMINI_AGENT_MODEL?.trim() || "gemini-4-hydrogen" : modelFor(call.name, call.model, deps.models);
   deps.log?.(`ajan: ${call.name} (${model})`);
+  if (backend === "gemini") return runGeminiStructured(call, model);
+  const queryFn = deps.queryFn ?? query;
 
   const abort = new AbortController();
   const timeoutMs = AGENT_TIMEOUT_MS();

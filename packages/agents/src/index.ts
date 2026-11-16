@@ -1,5 +1,6 @@
 export * from "./agents.ts";
 export * from "./runner.ts";
+export * from "./gemini.ts";
 export * from "./opencode.ts";
 export * from "./gateway.ts";
 export * from "./schemas.ts";
