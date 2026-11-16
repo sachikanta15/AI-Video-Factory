@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ResearchContext } from "@ys/core";
-import { RESEARCH_POLICY, SCRIPT_CLAIM_POLICY, researchBlock } from "./research.ts";
+import { researchPolicy, SCRIPT_CLAIM_POLICY, researchBlock } from "./research.ts";
 import { customStyleBlock } from "@ys/core";
 import { MOTION_DESIGN_POLICY, MOTION_REVIEW_POLICY, SHOT_INTENT_POLICY } from "./motion-design.ts";
 import { lessonsBlock, models, runStructured, type AgentDeps, type AgentImage, type AgentResult } from "./runner.ts";
@@ -109,7 +109,7 @@ Rules:
 - Every beat names one visual set-piece that a simple flat illustration can show.
 - Beat durations must sum to the target duration (±10%).
 - Write title, logline, premise, hook and beat summaries in the episode language (${brief.lang}).
-${RESEARCH_POLICY}`,
+${researchPolicy(brief.research)}`,
       prompt: `Topic: ${brief.topic}\nEpisode language: ${brief.lang}\nTarget duration: ${brief.targetSec} seconds\nAudience: ${brief.audience ?? "general"}${researchBlock(brief.research)}`,
     },
     deps,
@@ -142,7 +142,7 @@ Rules:
 - No filler ("as we all know", "interestingly"), no repetition of the same fact, rhetorical questions at most once per scene, no calls to subscribe.
 - Narration must be speakable: no brackets, emojis, stage directions or URLs. ${NUMBERS_AND_NAMES}
 - visualIntent (English) lists 2–3 concrete visual moments for a simple flat illustration (who is there, what they do, which object matters). location is in English; reuse location names exactly.${lessonsBlock(brief.lessons)}
-${RESEARCH_POLICY}
+${researchPolicy(brief.research)}
 ${SCRIPT_CLAIM_POLICY}`,
       prompt: `Story:\n${JSON.stringify(story, null, 2)}${researchBlock(brief.research)}`,
     },
@@ -172,7 +172,7 @@ Check and fix:
 - Speakability in ${brief.lang}: short sentences, no tongue-twisters. ${NUMBERS_AND_NAMES}
 - Length: keep total narration ≈ ${targetWords} words (±10%).
 Keep scene ids, beatIds and location names unchanged; you may rewrite narration, emotion and visualIntent. notes: the most important problems you fixed, in English, one line each, phrased as general rules a writer should follow next time.${lessonsBlock(brief.lessons)}
-${RESEARCH_POLICY}
+${researchPolicy(brief.research)}
 ${SCRIPT_CLAIM_POLICY}`,
       prompt: `Story:\n${JSON.stringify(story, null, 2)}\n\nDraft script:\n${JSON.stringify(draft, null, 2)}${researchBlock(brief.research)}`,
     },
@@ -216,7 +216,8 @@ Rules:
 - Each location is ONE physical place seen in one view. Never merge places ("lamp room and keeper's room" must be two locations) — merged places get drawn as split-screen images.
 - A character that changes over the story (e.g. chick → adult) is described in the look it has in most shots.
 - Never put readable text in a description (signs, notes, book pages): image models render it as letters. Say "a paper notice" instead of quoting it.
-- Historical/real figures: depict respectfully in the given art style; never depict prophets or religious figures.
+- Historical/real figures: depict respectfully in the given art style. Never depict the prophets of living religions; for such a figure keep the person off screen and show the place, the object or the followers instead.
+- Deities and figures of Hindu scripture and mythology (Shiva, Parvati, Ganesha, Vishnu, Durga, Hanuman, Lakshmi…) are the SUBJECT of this channel: cast them as characters ("person") and depict them reverently in the art style. Never leave a deity out of the cast and never let it be drawn as a prop: a prop has no rig, so it cannot gesture, walk or react and stands frozen while the narration describes it acting.
 - Set "kind" honestly: only humans are "person". A recurring horse, dog or bird is "animal"; a recurring bag, machine, vehicle, device, gadget, prototype, product or logo is "object" (they are drawn differently from people: a "person" is drawn as a human puppet, so a handheld device marked "person" turns into a robot). A robot, android or cartoon mascot with a body, arms and legs that acts on screen (narrates, points, reacts, types) is a "person": it is drawn on the same puppet and can gesture; marked "object" it would stand still as a prop.
 - Realism is mandatory: real people, places, buildings, objects and uniforms are described as they really looked (period-correct clothing, headgear, hair, beard, materials, colours, architecture). Set "reference" for every real one so the illustrator works from a real photo or painting; never invent the look of something real.
 Art style: ${style.artStyle}.${

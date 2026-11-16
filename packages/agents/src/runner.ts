@@ -246,7 +246,10 @@ function finish<T>(call: AgentCall<T>, model: string, message: SDKResultMessage,
   }
   const parsed = call.schema.safeParse(message.structured_output);
   if (!parsed.success) {
-    throw new AgentError(msg("agent.schema", { agent: call.name, detail: z.prettifyError(parsed.error) }), cost, model, call.name);
+    // Şema uyumsuzluğu geçici sayılır: model (özellikle OpenCode arka ucunda) aynı isteği yeniden
+    // deneyince sıklıkla geçerli bir değer üretir. Claude SDK'sı zaten bunu içeride denediğinden
+    // normal Claude yolunda ek maliyet oluşmaz.
+    throw new AgentError(msg("agent.schema", { agent: call.name, detail: z.prettifyError(parsed.error) }), cost, model, call.name, true);
   }
   deps.log?.(`ajan: ${call.name} bitti, $${cost.toFixed(4)}`);
   return { data: parsed.data, name: call.name, costUsd: cost, model, durationMs: message.duration_ms };

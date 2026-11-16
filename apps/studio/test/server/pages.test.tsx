@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { msg, type Text } from "@ys/core/messages";
 import { QUALITY_GATE } from "@ys/core/rules";
 import type { CostEntry, ProviderAdapter, Quota } from "@ys/media-gateway";
-import { saveLessons, saveModelSettings, type EpisodeInput, type EpisodeState } from "@ys/pipeline/light";
+import { saveLessons, saveLlmBackend, saveModelSettings, type EpisodeInput, type EpisodeState } from "@ys/pipeline/light";
 import { FsAssetStore, putJson, type AssetStore } from "@ys/storage";
 import { translator } from "../../src/lib/i18n.ts";
 import { fakeProvider } from "./fakes.ts";
@@ -91,6 +91,11 @@ vi.mock("../../src/app/characters/character-bank", () => ({
   ),
 }));
 vi.mock("../../src/app/models/models-form", () => ({ ModelsForm: ({ initial }: { initial: object }) => <div data-models={JSON.stringify(initial)} /> }));
+vi.mock("../../src/app/models/llm-backend-form", () => ({
+  LlmBackendForm: ({ initial, gatewayKey }: { initial: string | null; gatewayKey: boolean }) => (
+    <div data-backend={initial ?? ""} data-gateway-key={String(gatewayKey)} />
+  ),
+}));
 vi.mock("../../src/app/locale-provider", () => ({
   LocaleProvider: ({ locale, children }: { locale: string; children: ReactNode }) => <div data-locale={locale}>{children}</div>,
   LanguageSwitch: () => <span data-lang-switch="" />,
@@ -433,6 +438,14 @@ describe("Modeller sayfası", () => {
     const h = await html(ModelsPage());
     expect(h).toContain(`data-models="{&quot;screenwriter&quot;:&quot;claude-haiku-5-5&quot;}"`);
     expect(text(h)).toContain(translator("tr")("models.title"));
+  });
+
+  it("kayıtlı arka ucu ve anahtar durumunu anahtara verir", async () => {
+    await saveLlmBackend(fake.store, { backend: "experiential" });
+    const h = await html(ModelsPage());
+    expect(h).toContain('data-backend="experiential"');
+    // Test ortamında EXPLABS_API_KEY yok: form eksik anahtar uyarısını gösterebilmeli.
+    expect(h).toContain('data-gateway-key="false"');
   });
 });
 

@@ -38,7 +38,7 @@ const PKG = {
   chapters: [],
   tags: [],
   hashtags: [],
-  short: { from: "s2", to: "s2", title: "Short başlığı" },
+  short: { from: "s2", to: "s2", title: "Short başlığı", caption: "Short kancası.", hashtags: ["shorts"] },
 };
 
 /** Timeline, render ve paket hazır bölüm (paket ajanı verilen veriyi döndürür). */

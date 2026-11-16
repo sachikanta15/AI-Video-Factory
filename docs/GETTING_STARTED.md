@@ -86,6 +86,7 @@ Keys and switches live in `.env` (see [`.env.example`](../.env.example)). Notabl
 | `YS_UPDATE_CHECK=0` | Turn off the Studio's update check. |
 | `YS_RENDER_GL` | Chrome drawing backend for renders. Default `angle` (graphics card; about 40% faster, and needed for 3D figures). `swangle` is software GL for machines without a GPU. A GPU render that crashes is retried once with software GL. |
 | `YS_BROWSER_EXECUTABLE` | Path to a Chrome or Chrome for Testing binary that renders, stills and thumbnails use instead of the Chromium Remotion downloads. Empty uses Remotion's own. Needed where that Chromium hangs at start, as on macOS 26.5 (`browser has disconnected` / `Target closed`); the render error points to this variable then. |
+| `YS_RENDER_CONCURRENCY` | Parallel render tabs. Empty means half the cores, at most 2. Set `1` when the machine is short of memory or swap: with two tabs a render can stop reporting frames for 300 s and fail as `render stalled`, while the same timeline finishes in a single tab (measured on 16 Nov 2026: 1798 frames in 165 s). |
 
 ## Versions and updates
 

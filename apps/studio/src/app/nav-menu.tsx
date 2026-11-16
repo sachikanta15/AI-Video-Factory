@@ -8,10 +8,6 @@ import { useI18n } from "./locale-provider";
 
 const ITEMS: { href: string; label: MessageKey }[] = [
   { href: "/", label: "nav.episodes" },
-  { href: "/costs", label: "nav.costs" },
-  { href: "/pricing", label: "nav.pricing" },
-  { href: "/lessons", label: "nav.lessons" },
-  { href: "/rules", label: "nav.rules" },
   { href: "/characters", label: "nav.characters" },
   { href: "/models", label: "nav.models" },
 ];

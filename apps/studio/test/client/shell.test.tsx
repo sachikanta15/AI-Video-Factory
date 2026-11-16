@@ -63,13 +63,13 @@ describe("LanguageSwitch / useI18n", () => {
 
 describe("NavMenu", () => {
   it("önde Yeni bölüm düğmesi; bulunulan sayfa işaretli", () => {
-    nav.path = "/costs";
+    nav.path = "/models";
     renderIn(<NavMenu />, "tr");
     const links = screen.getAllByRole("link");
     expect(links[0]!.getAttribute("href")).toBe("/episodes/new");
     expect(links[0]!.textContent).toContain("Yeni bölüm");
     expect(links[0]!.className).not.toContain("ring-2");
-    expect(screen.getByRole("link", { name: "Maliyetler" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: "Modeller" }).getAttribute("aria-current")).toBe("page");
     expect(screen.getByRole("link", { name: "Bölümler" }).getAttribute("aria-current")).toBeNull();
     cleanup();
     nav.path = "/episodes/new";

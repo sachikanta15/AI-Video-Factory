@@ -101,6 +101,16 @@ describe("senaryo ajanları", () => {
       expect(captured.options.tools).toEqual([]); expect(captured.options.skills).toEqual([]);
     }
   });
+
+  it("kaynak defteri boşken senaryo kaynak yokluğunu anlatmaz, geleneğe dayanır", async () => {
+    // 14 Kas Chhath bölümü: boş defter + "yalnız verilen alıntıları kullan" kuralı, videoyu "kaynak bulmalıyız"a çevirdi.
+    for (const run of [(deps: AgentDeps) => storyArchitect(brief, deps), (deps: AgentDeps) => screenwriter(brief, story, deps), (deps: AgentDeps) => scriptDoctor(brief, story, script, deps)]) {
+      const captured = await capture(run);
+      expect(captured.system).toContain("No research excerpts are supplied for this episode");
+      expect(captured.system).toContain("Never narrate that you lack sources");
+      expect(captured.system).not.toContain("Use only the supplied excerpts for source-grounded claims");
+    }
+  });
   it("sanat yönetmeni ve stil seçici: kitle/stil ipucu yoksa varsayılan yazılır", async () => {
     const a = await capture((d) => artDirector(brief, d));
     expect(a.prompt).toBe("Topic: Pony Express\nAudience: general\nStyle hint: none — choose what fits the topic");
@@ -147,6 +157,14 @@ describe("senaryo ajanları", () => {
     const c = await capture((d) => castingDirector(script, style, d, [], [{ name: "Ada", role: "on-screen presenter" }]));
     expect(c.system).toContain("Already cast from the channel's character bank");
     expect(c.system).toContain("- Ada: on-screen presenter");
+  });
+
+  it("tanrılar kadroya karakter olarak girer: nesne olarak çizilen tanrı jest yapamaz", async () => {
+    const a = await capture((d) => castingDirector(script, style, d));
+    // "dini figürleri asla çizme" kuralı mitoloji bölümlerinde kadroyu boşaltıyordu (Ganesha, 14 Kas).
+    expect(a.system).not.toContain("never depict prophets or religious figures");
+    expect(a.system).toContain("Hindu scripture and mythology");
+    expect(a.system).toContain("a prop has no rig");
   });
 });
 

@@ -296,6 +296,10 @@ export const PIPELINE_MESSAGES = {
     tr: "  {name} nesne diye işaretlenmişti ama tarifi gövdeli bir figür (robot, maskot): kişi olarak çizilecek",
     en: "  {name} was marked as an object but is described as a figure with a body (robot, mascot): it will be drawn as a person",
   },
+  "log.cast.empty": {
+    tr: "  ⚠ kadroda hiç karakter yok: anlatılan eylemler çizilemez (jestler yalnız iskeletli kuklaya uygulanır), kişiler hareketsiz nesne olarak çizilir",
+    en: "  ⚠ no characters in the cast: narrated actions cannot be drawn (gestures only apply to a rigged puppet), so people are drawn as static props",
+  },
   "log.cast.nonHuman": {
     tr: "  insan olmayan {n} oyuncu nesne olarak çizilecek: {names}",
     en: "  {n} non-human cast members will be drawn as props: {names}",

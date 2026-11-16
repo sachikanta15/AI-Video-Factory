@@ -21,7 +21,7 @@ const PKG = PackageOut.parse({
   chapters: [],
   tags: ["a"],
   hashtags: ["tarih", "#tek noloji", "#"],
-  short: { from: "s1", to: "s2", title: "Kısa" },
+  short: { from: "s1", to: "s2", title: "Kısa", caption: "Kısa altyazı.", hashtags: ["kısa", "tarih"] },
 });
 
 describe("yayın paketi", () => {

@@ -130,8 +130,16 @@ export const isTransientRenderFailure = (e: unknown) =>
  */
 export const isMemoryFailure = (e: unknown) => e instanceof Error && /ran out of memory|out of memory|Could not take a screenshot/i.test(e.message);
 
-/** Varsayılan paralel sekme sayısı: çekirdeklerin yarısı, en çok MAX_DEFAULT_CONCURRENCY. */
-const defaultConcurrency = () => Math.max(1, Math.min(MAX_DEFAULT_CONCURRENCY, Math.floor(availableParallelism() / 2)));
+/**
+ * Varsayılan paralel sekme sayısı: çekirdeklerin yarısı, en çok MAX_DEFAULT_CONCURRENCY. `YS_RENDER_CONCURRENCY` ile
+ * sabitlenir (16 Kas: 8 çekirdekli, takas alanı dolu bir makinede iki sekme 300 sn boyunca hiç kare bildirmedi; aynı
+ * timeline tek sekmeyle 1798 kareyi 165 sn'de bitirdi).
+ */
+export const renderConcurrency = (env = process.env.YS_RENDER_CONCURRENCY) => {
+  const forced = Number(env);
+  if (Number.isInteger(forced) && forced >= 1) return Math.min(forced, 8);
+  return Math.max(1, Math.min(MAX_DEFAULT_CONCURRENCY, Math.floor(availableParallelism() / 2)));
+};
 
 /**
  * Remotion geçici klasörlerini os.tmpdir() altında açar; Windows'ta sistem Temp'i dışarıdan temizlenebiliyor. Render
@@ -237,7 +245,7 @@ export async function renderEpisode(opts: RenderOptions): Promise<string> {
         return await withTempDir(tempDir, () => renderOnce({ ...opts, concurrency }, gl));
       } catch (e) {
         if (attempt >= 1) throw withBrowserHint(e);
-        if (isMemoryFailure(e)) concurrency = Math.max(1, Math.floor((concurrency ?? defaultConcurrency()) / 2));
+        if (isMemoryFailure(e)) concurrency = Math.max(1, Math.floor((concurrency ?? renderConcurrency()) / 2));
         else if (gl !== SOFTWARE_GL && isGpuFailure(e)) gl = SOFTWARE_GL;
         else if (!isTransientRenderFailure(e)) throw withBrowserHint(e);
         // split en az bir parça döndürür; "?? ''" yalnız tip için (at() tipte undefined dönebilir).
@@ -262,7 +270,7 @@ async function renderOnce(opts: RenderOptions, gl: OpenGlRenderer): Promise<stri
     await watched(opts.stallMs, (cancelSignal, tick) => renderMedia({
       serveUrl, composition, inputProps, chromiumOptions, ...launch(), codec: "h264",
       frameRange: opts.frameRange, outputLocation: temporary, cancelSignal,
-      concurrency: opts.concurrency ?? defaultConcurrency(), timeoutInMilliseconds: BROWSER_TIMEOUT_MS,
+      concurrency: opts.concurrency ?? renderConcurrency(), timeoutInMilliseconds: BROWSER_TIMEOUT_MS,
       offthreadVideoCacheSizeInBytes: opts.videoCacheBytes ?? DEFAULT_VIDEO_CACHE_BYTES,
       ffmpegOverride: videoEncoding([]),
       onProgress: ({ progress }) => { tick(); opts.onProgress?.(progress); },
@@ -294,7 +302,7 @@ async function renderOnce(opts: RenderOptions, gl: OpenGlRenderer): Promise<stri
       inputProps,
       chromiumOptions,
       puppeteerInstance: browser,
-      concurrency: opts.concurrency ?? defaultConcurrency(),
+      concurrency: opts.concurrency ?? renderConcurrency(),
       timeoutInMilliseconds: BROWSER_TIMEOUT_MS,
       offthreadVideoCacheSizeInBytes: opts.videoCacheBytes ?? DEFAULT_VIDEO_CACHE_BYTES,
     };

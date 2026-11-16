@@ -1015,7 +1015,7 @@ describe("timeline, render ve inceleme", () => {
     chapters: [{ scene: "s1", title: "Başlangıç" }],
     tags: ["microsoft", "bill gates"],
     hashtags: ["tarih", "#teknoloji"],
-    short: { from: "s1", to: "s1", title: " Gates'in Hamlesi " },
+    short: { from: "s1", to: "s1", title: " Gates'in Hamlesi ", caption: " Kısa kanca. ", hashtags: ["shorts", "tarih"] },
   };
 
   it("package: yayın paketi ve küçük resim videonun yanına yazılır; hikâye yoksa konu başlık sayılır", async () => {
@@ -1035,7 +1035,7 @@ describe("timeline, render ve inceleme", () => {
       thumbnailText: PKG.thumbnailText,
       description: "Kanca satırı.\n\nAyrıntı paragrafı.\n\n#tarih #teknoloji",
       tags: PKG.tags,
-      short: { from: "s1", to: "s1", title: "Gates'in Hamlesi" },
+      short: { from: "s1", to: "s1", title: "Gates'in Hamlesi", caption: "Kısa kanca.", hashtags: ["shorts", "tarih"] },
     });
     const input = callsOf("packager")[0]!.args[0];
     expect(input).toMatchObject({ lang: "tr", story: { title: state.input.topic } });
@@ -1044,7 +1044,9 @@ describe("timeline, render ve inceleme", () => {
     expect(Object.keys(sceneSec)).toEqual(state.script!.scenes.map((s) => s.id));
     expect(Object.values(sceneSec).reduce((a, b) => a + b, 0)).toBeCloseTo(state.timeline!.durationInFrames / state.timeline!.fps, 5);
     const txt = state.render!.path.replace(/\.mp4$/, ".youtube.txt");
-    expect(readFileSync(txt, "utf8")).toBe(`${PKG.title}\n\n${state.package!.description}\n\nmicrosoft, bill gates`);
+    expect(readFileSync(txt, "utf8")).toBe(
+      `${PKG.title}\n\n${state.package!.description}\n\nmicrosoft, bill gates\n--- Short (Reels) ---\nGates'in Hamlesi\nKısa kanca.\n#shorts #tarih`,
+    );
     expect(h.logs).toContain(`  yayın paketi (başlık, açıklama, bölümler, etiketler): ${txt}`);
     // Küçük resim ajanın kısa metniyle; durağan karelerde başlık solda.
     const jpg = state.render!.path.replace(/\.mp4$/, ".jpg");

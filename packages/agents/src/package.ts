@@ -20,6 +20,8 @@ export const PackageOut = z.object({
       from: z.string().describe("Id of the first scene of the Short"),
       to: z.string().describe("Id of the last scene of the Short (inclusive; may equal from)"),
       title: z.string().max(100).describe("YouTube Shorts title in the episode language, under 60 characters"),
+      caption: z.string().max(220).describe("YouTube Shorts caption in the episode language: 1-2 short lines that hook the viewer (search shows the first line); no links, no hashtags (code adds them)"),
+      hashtags: z.array(z.string().max(30)).max(5).describe("Up to 5 hashtags for the Short without the # sign, no spaces"),
     })
     .describe("The best stretch of consecutive scenes for a vertical YouTube Short, 20-60 s in total: it must make sense on its own, open with a hook and end on a payoff"),
 });

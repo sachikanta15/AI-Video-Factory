@@ -14,7 +14,8 @@ import {
   type RefInput,
   type RunOptions,
 } from "@ys/media-gateway";
-import { backfillLibraryIdentities, curateLessons, EpisodePipeline, listLibraryCharacters, loadLessons, saveLessons } from "@ys/pipeline";
+import { agentEnv, backfillLibraryIdentities, curateLessons, EpisodePipeline, listLibraryCharacters, loadLessons, saveLessons } from "@ys/pipeline";
+import { agentQueryFn } from "@ys/agents";
 import { createStoreFromEnv } from "@ys/storage";
 import { bankCommand } from "./bank.ts";
 import { samplesCommand } from "./styles.ts";
@@ -194,7 +195,7 @@ async function main(): Promise<void> {
     const store = createStoreFromEnv(process.env);
     const log = (m: string) => console.error(m);
     const gateway = new MediaGateway({ providers, store, ledger, log: (m) => log(`  · ${m}`) });
-    const pipeline = new EpisodePipeline({ gateway, store, ledger, workDir: WORK_DIR, log, agentDeps: { log } });
+    const pipeline = new EpisodePipeline({ gateway, store, ledger, workDir: WORK_DIR, log, agentDeps: { log, queryFn: agentQueryFn(await agentEnv(store)) } });
     return samplesCommand({ pipeline, print: (l) => console.log(l) }, positionals.slice(2));
   }
 
@@ -274,7 +275,7 @@ async function main(): Promise<void> {
     const store = createStoreFromEnv(process.env);
     const log = (m: string) => console.error(m);
     const gateway = new MediaGateway({ providers, store, ledger, log: (m) => log(`  · ${m}`) });
-    const pipeline = new EpisodePipeline({ gateway, store, ledger, workDir: WORK_DIR, log, agentDeps: { log } });
+    const pipeline = new EpisodePipeline({ gateway, store, ledger, workDir: WORK_DIR, log, agentDeps: { log, queryFn: agentQueryFn(await agentEnv(store)) } });
     return bankCommand({ pipeline, store, print: (l) => console.log(l) }, positionals[1], positionals[2], values);
   }
 
@@ -282,7 +283,7 @@ async function main(): Promise<void> {
     const store = createStoreFromEnv(process.env);
     const log = (m: string) => console.error(m);
     const gateway = new MediaGateway({ providers, store, ledger, log: (m) => log(`  · ${m}`) });
-    const pipeline = new EpisodePipeline({ gateway, store, ledger, workDir: WORK_DIR, log, agentDeps: { log } });
+    const pipeline = new EpisodePipeline({ gateway, store, ledger, workDir: WORK_DIR, log, agentDeps: { log, queryFn: agentQueryFn(await agentEnv(store)) } });
     if (command === "render-demo") return renderDemo(pipeline, store);
     return episodeCommand(pipeline, positionals[1], positionals[2], {
       ...values,

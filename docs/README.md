@@ -11,6 +11,7 @@ Start with **[Getting started](GETTING_STARTED.md)**, then follow the **[Studio 
 | [Getting started](GETTING_STARTED.md) | Requirements, installation, optional Docker/Manim setup, configuration and updates |
 | [Studio](STUDIO.md) | Create, approve, preview, revise, render, download and delete episodes |
 | [CLI](CLI.md) | Episode commands, options, character bank and diagnostics |
+| [LLM backends](LLM_BACKENDS.md) | Claude SDK, OpenCode subscription and the Experiential gateway, plus the Studio toggle |
 | [Environment diagnostics](DOCTOR.md) | Check local tools without generation or paid calls |
 | [Production features](FEATURES.md) | Pipeline, style packs, reference checks, reuse, sound and cost controls |
 
@@ -18,6 +19,7 @@ Start with **[Getting started](GETTING_STARTED.md)**, then follow the **[Studio 
 
 | Guide | What you will find |
 | --- | --- |
+| [Content strategy and tracker](CONTENT_STRATEGY.md) | Target audience, content types, format specs, cadence and the production/reels tracker |
 | [Vector animation](VECTOR_ANIMATION.md) | Rigging, gestures, lip sync, staging, cameras and physical checks |
 | [Scene motion and rendering engines](SCENE_MOTION.md) | Three.js/PixiJS contract, motion previews and the HyperFrames development fixture |
 | [Style craft](STYLE_CRAFT.md) | Style-specific motion, texture and preview fixtures |

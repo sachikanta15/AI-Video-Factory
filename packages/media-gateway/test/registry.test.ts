@@ -45,6 +45,7 @@ describe("createProvidersFromEnv", () => {
         "comfy:* (COMFYUI_URL veya manifest.json yok)",
         "fal:* (FAL_KEY yok)",
         "gemini:* (GEMINI_API_KEY yok)",
+        "voicestudio (YS_VOICESTUDIO_URL yok)",
         "elevenlabs:* (ELEVENLABS_API_KEY yok)",
       ],
     });
@@ -56,6 +57,7 @@ describe("createProvidersFromEnv", () => {
       "comfy:* (no COMFYUI_URL or manifest.json)",
       "fal:* (no FAL_KEY)",
       "gemini:* (no GEMINI_API_KEY)",
+      "voicestudio (no YS_VOICESTUDIO_URL)",
       "elevenlabs:* (no ELEVENLABS_API_KEY)",
     ]);
     const veo = rawEnv({ GEMINI_API_KEY: "g", GEMINI_VEO_MODEL: "veo-x" }, empty).providers.find((p) => p.id === "gemini:veo")!;

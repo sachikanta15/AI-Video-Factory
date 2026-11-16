@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@ys/agents": "workspace:*",
     "@ys/core": "workspace:*",
     "@ys/db": "workspace:*",
     "@ys/media-gateway": "workspace:*",

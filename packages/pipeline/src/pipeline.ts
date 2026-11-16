@@ -2775,6 +2775,9 @@ export class EpisodePipeline {
           c.kind = "object";
           this.log(msg("log.cast.asObject", { name: c.name }));
         }
+        // Kukla yoksa jest de yok: anlatılan eylem sessizce kaybolur (Ganesha bölümü, 14 Kas: kadro boş kaldı, Şiva ve
+        // Ganeşa nesne olarak çizildi, incelemelerin %51'i "eylem görünmüyor" dedi).
+        if (!state.cast.characters.length) this.log(msg("log.cast.empty"));
       }
       // Yeni kadro eski kimlikleri (c1, l2…) yeniden kullanır: adı ya da tarifi değişen varlığın eski konsepti ve
       // kadrodan türemiş nesnesi atılır (yoksa yeni c1'e eskisinin çizimi giderdi); değişmeyenler korunur (para gitmez).
@@ -3205,10 +3208,20 @@ export class EpisodePipeline {
         const pkg = await this.agent(state, "package", packager({ story, script, lang: state.input.lang, durationSec, sceneSec }, this.agentDeps));
         const description = fullDescription(pkg, chapterLines(pkg.chapters, Object.fromEntries(starts)), [...historyCredits(state), ...archiveCredits(state), ...await researchCredits(this.deps.store, state)]);
         thumbnailText = pkg.thumbnailText.trim() || thumbnailText;
-        state.package = { title: pkg.title.trim(), thumbnailText, description, tags: pkg.tags, short: { ...pkg.short, title: pkg.short.title.trim() }, at: new Date().toISOString() };
-        // Yüklemede kopyalanacak metinler videonun yanında da dursun.
+        state.package = {
+          title: pkg.title.trim(),
+          thumbnailText,
+          description,
+          tags: pkg.tags,
+          short: { ...pkg.short, title: pkg.short.title.trim(), caption: pkg.short.caption.trim(), hashtags: pkg.short.hashtags.map((h) => h.trim()).filter(Boolean) },
+          at: new Date().toISOString(),
+        };
+        // Yüklemede kopyalanacak metinler videonun yanında da dursun (uzun biçim + Short).
+        const shortBlock = state.package.short
+          ? ["", "--- Short (Reels) ---", state.package.short.title, state.package.short.caption ?? "", (state.package.short.hashtags ?? []).map((h) => `#${h.replace(/^#/, "").replace(/\s+/g, "")}`).join(" ")].filter((l) => l !== "")
+          : [];
         const file = join(dir, `${state.id}.youtube.txt`);
-        await writeFile(file, [state.package.title, "", description, "", state.package.tags.join(", ")].join("\n"), "utf8");
+        await writeFile(file, [state.package.title, "", description, "", state.package.tags.join(", "), ...shortBlock].join("\n"), "utf8");
         this.log(msg("log.package.done", { path: file }));
       } catch (e) {
         this.log(msg("log.package.failed", { error: errorText(e) }));
@@ -3264,7 +3277,7 @@ export class EpisodePipeline {
         });
         const sec = Math.round(short.durationInFrames / short.fps);
         const title = state.package?.short?.title || state.package?.title || state.input.topic;
-        state.short = { path: output, title, scenes: range.scenes, sec, at: new Date().toISOString(), exportId: randomUUID(),
+        state.short = { path: output, title, caption: state.package?.short?.caption, hashtags: state.package?.short?.hashtags, scenes: range.scenes, sec, at: new Date().toISOString(), exportId: randomUUID(),
           auditRanges: short.visuals.map((v) => ({ id: v.shotId, startSec: v.fromFrame / short.fps, endSec: (v.fromFrame + v.durationInFrames) / short.fps })) };
         this.log(msg("log.short.done", { path: output, sec, scenes: range.scenes.join(", ") }));
         await this.auditExport(state, "short");

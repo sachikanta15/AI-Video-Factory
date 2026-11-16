@@ -50,6 +50,9 @@ importers:
 
   apps/cli:
     dependencies:
+      '@ys/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@ys/core':
         specifier: workspace:*
         version: link:../../packages/core

@@ -6,6 +6,7 @@ import { ElevenLabsMusicAdapter, ElevenLabsSfxAdapter, ElevenLabsTtsAdapter } fr
 import { FalAdapter } from "./providers/fal.ts";
 import { FAL_MODELS } from "./providers/fal-models.ts";
 import { GeminiImageAdapter, GeminiTtsAdapter, OmniVideoAdapter, VeoAdapter } from "./providers/gemini.ts";
+import { VoiceStudioTtsAdapter } from "./providers/voicestudio.ts";
 import { msg, type Msg } from "@ys/core";
 import type { ProviderAdapter } from "./types.ts";
 
@@ -168,6 +169,18 @@ export function createProvidersFromEnv(
     }
   } else {
     skipped.push(msg("gw.skip.noKey", { scope: "gemini:*", key: "GEMINI_API_KEY" }));
+  }
+
+  // --- VoiceStudio (yerel OmniVoice TTS) ---
+  if (env.YS_VOICESTUDIO_URL || env.YS_VOICESTUDIO === "1") {
+    providers.push(
+      new VoiceStudioTtsAdapter(
+        env.YS_VOICESTUDIO_URL ?? "http://127.0.0.1:3900",
+        env.YS_VOICESTUDIO_PROFILE || undefined,
+      ),
+    );
+  } else {
+    skipped.push(msg("gw.skip.noKey", { scope: "voicestudio", key: "YS_VOICESTUDIO_URL" }));
   }
 
   // --- ElevenLabs ---

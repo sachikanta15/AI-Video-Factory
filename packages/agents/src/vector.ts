@@ -289,6 +289,7 @@ export const VectorSceneOut = z.object({
       }),
     )
     .max(6)
+    .default([])
     .describe("Props used in this scene that are not in the asset list yet (max 6); they will be drawn once and reused"),
   newBackgrounds: z
     .array(
@@ -300,6 +301,7 @@ export const VectorSceneOut = z.object({
       }),
     )
     .max(2)
+    .default([])
     .describe("Extra backgrounds (empty room shells / places) this scene needs that are not in the list, max 2"),
 });
 export type VectorSceneOut = z.infer<typeof VectorSceneOut>;

@@ -9,7 +9,7 @@ import { applyCuration, CURATE_ABOVE, loadLessons, mergeLessons, saveLessons, to
 import { acquireLock, deadLock, liveLock } from "../src/lock.ts";
 import { anonymizeNames } from "../src/names.ts";
 import { judgeFrame, redrawPrompt } from "../src/qa.ts";
-import { loadModelSettings, saveModelSettings } from "../src/settings.ts";
+import { agentEnv, loadLlmBackend, loadModelSettings, saveLlmBackend, saveModelSettings } from "../src/settings.ts";
 import { motionModeOf, type EpisodeInput } from "../src/state.ts";
 
 const tempStore = (): AssetStore => new FsAssetStore(mkdtempSync(join(tmpdir(), "ys-small-")));
@@ -22,6 +22,31 @@ describe("model ayarları", () => {
     expect(saved).toEqual({ director: "claude-haiku-5-5" });
     expect(await getJson(store, "settings/models.json")).toEqual(saved);
     expect(await loadModelSettings(store)).toEqual(saved);
+  });
+});
+
+describe("ajan arka ucu ayarı", () => {
+  it("kayıt yoksa ortam değişkeni geçerli, kayıt varsa onu ezer", async () => {
+    const store = tempStore();
+    const env: NodeJS.ProcessEnv = { NODE_ENV: "test", YS_AGENT_BACKEND: "opencode" };
+    expect(await loadLlmBackend(store)).toBeUndefined();
+    expect(await agentEnv(store, env)).toEqual(env);
+
+    expect(await saveLlmBackend(store, { backend: "experiential" })).toBe("experiential");
+    expect(await getJson(store, "settings/llm-backend.json")).toEqual({ backend: "experiential" });
+    expect(await loadLlmBackend(store)).toBe("experiential");
+    expect((await agentEnv(store, env)).YS_AGENT_BACKEND).toBe("experiential");
+    // Kaynak ortam değişmez: yalnız kopya döner.
+    expect(env.YS_AGENT_BACKEND).toBe("opencode");
+  });
+
+  it("bilinmeyen arka ucu yazmaz; boş kayıt ortam değişkenine döner", async () => {
+    const store = tempStore();
+    expect(await saveLlmBackend(store, { backend: "bedava-model" })).toBeUndefined();
+    expect(await saveLlmBackend(store, { backend: "claude" })).toBe("claude");
+    expect(await saveLlmBackend(store, {})).toBeUndefined();
+    expect(await loadLlmBackend(store)).toBeUndefined();
+    expect((await agentEnv(store, { NODE_ENV: "test", YS_AGENT_BACKEND: "opencode" })).YS_AGENT_BACKEND).toBe("opencode");
   });
 });
 

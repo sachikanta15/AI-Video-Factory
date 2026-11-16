@@ -292,11 +292,11 @@ export interface EpisodeState {
     description: string;
     tags: string[];
     /** Short'a kesilecek sahne aralığı (dahil) ve başlığı; eski paketlerde yok. */
-    short?: { from: string; to: string; title: string };
+    short?: { from: string; to: string; title: string; caption?: string; hashtags?: string[] };
     at: string;
   };
   /** Dikey Short (short aşaması): videonun yanındaki dosya, başlık, sahneler ve süre. */
-  short?: { path: string; title: string; scenes: string[]; sec: number; at: string; exportId?: string; audit?: RenderAuditSummary; auditRanges?: { id: string; startSec: number; endSec: number }[] };
+  short?: { path: string; title: string; caption?: string; hashtags?: string[]; scenes: string[]; sec: number; at: string; exportId?: string; audit?: RenderAuditSummary; auditRanges?: { id: string; startSec: number; endSec: number }[] };
   /** Render öncesi taslak kontrolü: ortalama puan ve yeniden planlanan sahneler. */
   draftReview?: EpisodeReview & { avg: number; revisedScenes: string[] };
   /**

@@ -42,7 +42,7 @@ const DIR = mkdtempSync(join(tmpdir(), "ys-render-"));
 const LOCK = join(DIR, "render.lock");
 process.env.YS_RENDER_LOCK = LOCK;
 const mod = await import("../src/render.ts");
-const { renderEpisode, renderStills, renderThumbnail, renderFigurePreviews, withRenderLock, ifRenderFree, isTransientRenderFailure, isGpuFailure, isMemoryFailure, isBrowserFailure, withBrowserHint, browserExecutable, renderGl, assemble, cacheDirOf, keyframesAt, runsOf, split, ENTRY } = mod;
+const { renderEpisode, renderStills, renderThumbnail, renderFigurePreviews, withRenderLock, ifRenderFree, isTransientRenderFailure, isGpuFailure, isMemoryFailure, isBrowserFailure, withBrowserHint, browserExecutable, renderGl, renderConcurrency, assemble, cacheDirOf, keyframesAt, runsOf, split, ENTRY } = mod;
 
 /** Sahne öneki olan çekimlerden zaman çizelgesi (30 fps); her sahne ayrı render parçası. */
 const make = (scenes: number, frames: number) =>
@@ -442,6 +442,24 @@ describe("çizim arka ucu", () => {
     }
     expect(isGpuFailure(new Error("composition bulunamadı"))).toBe(false);
     expect(isGpuFailure("GPU")).toBe(false);
+  });
+});
+
+describe("paralel sekme sayısı", () => {
+  it("YS_RENDER_CONCURRENCY geçerli bir tam sayıysa onu kullanır", () => {
+    expect(renderConcurrency("1")).toBe(1);
+    expect(renderConcurrency("3")).toBe(3);
+    expect(renderConcurrency(" 2 ")).toBe(2);
+  });
+
+  it("değer yoksa ya da geçersizse çekirdeklerin yarısına döner", () => {
+    const fallback = renderConcurrency(undefined);
+    expect(fallback).toBeGreaterThanOrEqual(1);
+    expect(fallback).toBeLessThanOrEqual(2);
+    expect(renderConcurrency("0")).toBe(fallback);
+    expect(renderConcurrency("-1")).toBe(fallback);
+    expect(renderConcurrency("abc")).toBe(fallback);
+    expect(renderConcurrency("1.5")).toBe(fallback);
   });
 });
 

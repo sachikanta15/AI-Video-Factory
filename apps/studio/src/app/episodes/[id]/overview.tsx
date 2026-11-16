@@ -144,7 +144,7 @@ export function OverviewTab({ data, busy = false, act }: { data: EpisodeResponse
           <ul className="space-y-2 text-sm">{[...new Map(state.render!.archiveSources!.map((u) => [u.source.id, u.source])).values()].slice(0, 12).map((source) => <li key={source.id} className="break-words"><a href={source.sourceUrl} target="_blank" rel="noreferrer" className="text-accent underline">{source.title}</a><span className="text-muted"> · {source.creator}</span></li>)}</ul>
           <a className="btn-ghost" href={`/api/episodes/${state.id}/sources`} download>{t("archive.download")}</a>
         </section>}
-        {state.package && <PackageCard pkg={state.package} shortTitle={state.short?.title} />}
+        {state.package && <PackageCard pkg={state.package} shortTitle={state.short?.title} shortCaption={state.short?.caption} shortHashtags={state.short?.hashtags} />}
         <Review data={data} />
       </div>
       <Facts data={data} />
@@ -155,7 +155,7 @@ export function OverviewTab({ data, busy = false, act }: { data: EpisodeResponse
 const LESSON_PREVIEW = 5;
 
 /** Yayın paketi: YouTube'a yüklerken kopyalanacak başlık, açıklama (bölümler ve hashtag'lerle) ve etiketler. */
-function PackageCard({ pkg, shortTitle }: { pkg: NonNullable<EpisodeResponse["state"]["package"]>; shortTitle?: string }) {
+function PackageCard({ pkg, shortTitle, shortCaption, shortHashtags }: { pkg: NonNullable<EpisodeResponse["state"]["package"]>; shortTitle?: string; shortCaption?: string; shortHashtags?: string[] }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState<string>();
   const copy = (key: string, text: string) => {
@@ -172,6 +172,7 @@ function PackageCard({ pkg, shortTitle }: { pkg: NonNullable<EpisodeResponse["st
       {rows > 1 ? <textarea readOnly rows={rows} className="field" value={text} /> : <input readOnly className="field" value={text} />}
     </label>
   );
+  const hashtagText = (hs?: string[]) => (hs ?? []).map((h) => `#${h.replace(/^#/, "").replace(/\s+/g, "")}`).filter((h) => h.length > 1).join(" ");
   return (
     <section className="card grid gap-3 p-4">
       <h3 className="font-semibold">{t("video.package")}</h3>
@@ -179,6 +180,8 @@ function PackageCard({ pkg, shortTitle }: { pkg: NonNullable<EpisodeResponse["st
       {field("description", t("video.package.description"), pkg.description, 8)}
       {field("tags", t("video.package.tags"), pkg.tags.join(", "))}
       {shortTitle && field("short", t("video.short.title"), shortTitle)}
+      {shortCaption && field("short-caption", t("video.short.caption"), shortCaption, 3)}
+      {hashtagText(shortHashtags) && field("short-hashtags", t("video.short.hashtags"), hashtagText(shortHashtags))}
     </section>
   );
 }

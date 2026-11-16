@@ -41,6 +41,14 @@ unless the render cannot stage it), and the face shows the emotion the descripti
 sad, angry, surprised, happy, thoughtful) even if the director chose another; clapping, key taps and pen
 strokes are heard in sync with the hands.
 
+Every one of those gestures moves rig groups (`arm-l`, `forearm-l`, `head`…), so it only works on a cast
+character. A person the casting director left out of the cast is drawn as a static prop: its planned gestures
+are silently ignored and it stands with its arms down while the narration describes it acting. When a vector
+episode looks frozen, check `cast.characters` before blaming the director or the model — the run log warns
+(`no characters in the cast`) when the cast comes back empty. Figures of Hindu scripture and mythology are
+cast as people for this reason; the "never depict religious figures" rule covers only the prophets of living
+religions.
+
 A hand that points at or gestures toward the person beside it stops halfway between them, so two hands never
 meet in mid-air. Characters turn to the person they are with instead of staring at the camera: a listener
 turns toward the speaker, the speaker half way; 3D figures really turn. Standing characters rest their weight
