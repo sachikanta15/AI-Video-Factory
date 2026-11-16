@@ -1,7 +1,7 @@
 import { LocalizedError, msg, type Capability } from "@ys/core";
 import { toWav } from "../audio.ts";
 import { afterSubmit } from "../types.ts";
-import { fromBase64, pollUntil, requestBytes, requestJson, toBase64 } from "../http.ts";
+import { fromBase64, pollUntil, requestBytes, requestJson, sleep, toBase64 } from "../http.ts";
 import { vertexAccessToken, vertexUrl } from "../vertex-auth.ts";
 import {
   ContentRejectedError,
@@ -20,6 +20,25 @@ const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 /** Eşzamanlı üretim çağrıları (görsel, TTS) dakikalar sürebilir; varsayılan 120 sn yerine bu sınır. */
 const GENERATION_TIMEOUT_MS = 300_000;
+
+// Vertex image generation is burst-sensitive even when requests are logically sequential. Keep a small
+// process-wide gap between starts; the value is configurable for projects with a different quota profile.
+let vertexNextStart = 0;
+let vertexSchedule = Promise.resolve();
+async function waitForVertexSlot(): Promise<void> {
+  const previous = vertexSchedule;
+  let release!: () => void;
+  vertexSchedule = new Promise<void>((resolve) => { release = resolve; });
+  await previous;
+  try {
+    const minInterval = Math.max(0, Number(process.env.GEMINI_VERTEX_MIN_INTERVAL_MS) || 1500);
+    const wait = Math.max(0, vertexNextStart - Date.now());
+    if (wait) await sleep(wait);
+    vertexNextStart = Date.now() + minInterval;
+  } finally {
+    release();
+  }
+}
 
 interface InlineData {
   mimeType: string;
@@ -49,13 +68,14 @@ async function geminiRequest(config: GeminiModelConfig, fetchFn: typeof fetch, b
   let url: string;
   if (vertex) {
     if (!config.project) throw new LocalizedError(msg("gw.gemini.vertexProject"));
+    await waitForVertexSlot();
     headers.Authorization = `Bearer ${await vertexAccessToken()}`;
     url = vertexUrl(config.project, config.location ?? "global", config.model);
   } else {
     headers["x-goog-api-key"] = config.apiKey;
     url = `${BASE}/models/${config.model}:generateContent`;
   }
-  return requestJson<GenerateContentResponse>(fetchFn, url, { method: "POST", headers, body: JSON.stringify(body), signal, timeoutMs: GENERATION_TIMEOUT_MS });
+  return requestJson<GenerateContentResponse>(fetchFn, url, { method: "POST", headers, body: JSON.stringify(body), signal, timeoutMs: GENERATION_TIMEOUT_MS, retries: vertex ? 5 : 3 });
 }
 
 function inlineParts(res: GenerateContentResponse): InlineData[] {

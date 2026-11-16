@@ -34,7 +34,7 @@ export const DEFAULT_REQUEST_TIMEOUT_MS = 120_000;
 const MAX_RETRY_AFTER_MS = 60_000;
 
 /** request() seçenekleri: fetch'in RequestInit'i + istek başına süre sınırı. */
-export type RequestOptions = RequestInit & { timeoutMs?: number };
+export type RequestOptions = RequestInit & { timeoutMs?: number; retries?: number };
 
 /** İstek, süre sınırı içinde tamamlanmadı (çağıranın iptali değil). */
 export class RequestTimeoutError extends LocalizedError {
@@ -65,7 +65,8 @@ export async function request(
   options: RequestOptions = {},
   retries = 3,
 ): Promise<Response> {
-  const { timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS, ...init } = options;
+  const { timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS, retries: optionRetries, ...init } = options;
+  const retryCount = optionRetries ?? retries;
   const callerSignal = init.signal ?? undefined;
   // GET dışı istek (iş gönderme, TTS) sunucu hatasında tekrar gönderilmez: ilk istek işlenmiş olabilir ve iki kez
   // ücretlendirilir. Yalnız "işlenmedi" anlamına gelen 408/425/429/503 tekrarlanır.
@@ -84,13 +85,13 @@ export async function request(
       if (callerSignal?.aborted) throw e;
       const error = timeout.aborted ? new RequestTimeoutError(url, timeoutMs) : e;
       // Ağ hatası: istek sunucuya ulaşmış olabilir; yalnız idempotent istek tekrarlanır.
-      if (idempotent && attempt < retries) {
+      if (idempotent && attempt < retryCount) {
         await sleep(1000 * 2 ** attempt, callerSignal);
         continue;
       }
       throw error;
     }
-    if (attempt < retries && (idempotent ? RETRYABLE : NOT_PROCESSED).has(res.status)) {
+    if (attempt < retryCount && (idempotent ? RETRYABLE : NOT_PROCESSED).has(res.status)) {
       const hinted = res.status === 429 || res.status === 503 ? retryAfterMs(res.headers.get("retry-after")) : undefined;
       await sleep(hinted ?? 1000 * 2 ** attempt, callerSignal);
       continue;
