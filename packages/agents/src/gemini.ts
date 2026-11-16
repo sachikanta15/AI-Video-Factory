@@ -4,6 +4,19 @@ import { z } from "zod";
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 type GeminiResponse = { candidates?: { content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number }; error?: { message?: string } };
 
+/** Gemini structured output accepts a useful JSON-Schema subset, not every draft-07 keyword emitted by Zod. */
+function geminiSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  const allowed = new Set(["type", "format", "description", "enum", "minimum", "maximum", "properties", "required", "items", "additionalProperties", "minItems", "maxItems"]);
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (!allowed.has(key)) continue;
+    if (key === "properties" && value && typeof value === "object") out.properties = Object.fromEntries(Object.entries(value).map(([name, child]) => [name, geminiSchema(child as Record<string, unknown>)]));
+    else if (key === "items" && value && typeof value === "object") out.items = geminiSchema(value as Record<string, unknown>);
+    else out[key] = value;
+  }
+  return out;
+}
+
 function imagePart(image: AgentImage) { return { inlineData: { mimeType: image.mimeType, data: Buffer.from(image.data).toString("base64") } }; }
 function pricePerMillion(name: string, fallback: number): number { const value = Number(process.env[name]); return Number.isFinite(value) && value >= 0 ? value : fallback; }
 
@@ -14,7 +27,7 @@ export async function runGeminiStructured<T>(call: AgentCall<T>, model: string):
   const response = await fetch(`${BASE}/${encodeURIComponent(model)}:generateContent`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: call.system }] }, contents: [{ role: "user", parts: [...(call.images ?? []).map(imagePart), { text: call.prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: toOutputSchema(call.schema) } }),
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: call.system }] }, contents: [{ role: "user", parts: [...(call.images ?? []).map(imagePart), { text: call.prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: geminiSchema(toOutputSchema(call.schema)) } }),
   });
   const body = (await response.json()) as GeminiResponse;
   if (!response.ok || body.error) {
