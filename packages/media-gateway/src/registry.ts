@@ -82,9 +82,14 @@ export function createProvidersFromEnv(
     skipped.push(msg("gw.skip.noKey", { scope: "fal:*", key: "FAL_KEY" }));
   }
 
-  // --- Google Gemini ---
-  if (env.GEMINI_API_KEY) {
-    const apiKey = env.GEMINI_API_KEY;
+  // --- Google Gemini (AI Studio API key or Vertex ADC) ---
+  const useVertex = env.GOOGLE_GENAI_USE_VERTEXAI === "1" || env.GOOGLE_GENAI_USE_VERTEXAI === "true";
+  const vertexReady = useVertex && !!env.GOOGLE_CLOUD_PROJECT;
+  if (env.GEMINI_API_KEY || vertexReady) {
+    const apiKey = env.GEMINI_API_KEY ?? "";
+    const auth = vertexReady ? "vertex" as const : "aistudio" as const;
+    const project = env.GOOGLE_CLOUD_PROJECT;
+    const location = env.GOOGLE_CLOUD_LOCATION ?? "global";
     providers.push(
       new GeminiImageAdapter({
         id: "gemini:nano-banana-pro",
@@ -92,7 +97,7 @@ export function createProvidersFromEnv(
         apiKey,
         qualityPrior: 0.9,
         price: { unit: "per_output", usd: 0.134 },
-        priceSource: { url: GEMINI_PRICING, checked: "2026-10-18", note: "1K–2K; 4K $0.24" },
+        priceSource: { url: GEMINI_PRICING, checked: "2026-10-18", note: "1K–2K; 4K $0.24" }, auth, project, location,
       }),
       new GeminiImageAdapter({
         id: "gemini:nano-banana-2.1",
@@ -104,7 +109,7 @@ export function createProvidersFromEnv(
           url: "https://www.developersdigest.tech/blog/image-video-generation-api-pricing-2026",
           checked: "2026-10-18",
           note: msg("price.note.nanoBanana21"),
-        },
+        }, auth, project, location,
       }),
       new GeminiImageAdapter({
         id: "gemini:nano-banana-2",
@@ -112,7 +117,7 @@ export function createProvidersFromEnv(
         apiKey,
         qualityPrior: 0.8,
         price: { unit: "per_output", usd: 0.067 },
-        priceSource: { url: GEMINI_PRICING, checked: "2026-10-18", note: msg("price.note.nanoBanana2") },
+        priceSource: { url: GEMINI_PRICING, checked: "2026-10-18", note: msg("price.note.nanoBanana2") }, auth, project, location,
       }),
       new GeminiTtsAdapter({
         id: "gemini:tts",
@@ -124,7 +129,7 @@ export function createProvidersFromEnv(
           url: GEMINI_PRICING,
           checked: "2026-10-31",
           note: msg("price.note.geminiTts"),
-        },
+        }, auth, project, location,
       }),
     );
     // veo-3.1-generate-preview 22 Eki 2026'da kapatıldı (https://ai.google.dev/gemini-api/docs/deprecations; yerine
@@ -135,7 +140,7 @@ export function createProvidersFromEnv(
         new OmniVideoAdapter({
           id: "gemini:omni-video",
           model: env.GEMINI_OMNI_MODEL ?? "gemini-omni-1.1-flash",
-          apiKey,
+          apiKey, auth, project, location,
           // Kling 3 standardın (0.75) üstünde, Kling 3 Pro'nun (0.85) altında: denenene dek tahmin.
           qualityPrior: 0.8,
           // $17.50/1M video çıktı tokeni ≈ 720p'de $0.10/sn (belgedeki tahmin). Süre istenemediği için en az 5 sn sayılır.
@@ -153,7 +158,7 @@ export function createProvidersFromEnv(
         new VeoAdapter({
           id: "gemini:veo",
           model: env.GEMINI_VEO_MODEL,
-          apiKey,
+          apiKey, auth, project, location,
           qualityPrior: 0.92,
           // Veo 4/6/8 sn üretir.
           price: { unit: "per_second", usd: 0.4, stepSec: 2, minSec: 4 },
@@ -168,7 +173,7 @@ export function createProvidersFromEnv(
       skipped.push(msg("gw.skip.veo"));
     }
   } else {
-    skipped.push(msg("gw.skip.noKey", { scope: "gemini:*", key: "GEMINI_API_KEY" }));
+    skipped.push(msg("gw.skip.noKey", { scope: "gemini:*", key: useVertex ? "GOOGLE_CLOUD_PROJECT" : "GEMINI_API_KEY" }));
   }
 
   // --- VoiceStudio (yerel OmniVoice TTS) ---

@@ -99,6 +99,11 @@ function createLedger(): CostLedger {
   return new JsonlLedger(LEDGER_FILE);
 }
 
+function pipelineConcurrency(): number | undefined {
+  const value = Number(process.env.YS_PIPELINE_CONCURRENCY);
+  return Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
 async function main(): Promise<void> {
   if (existsSync(".env")) process.loadEnvFile(".env");
 
@@ -195,7 +200,7 @@ async function main(): Promise<void> {
     const store = createStoreFromEnv(process.env);
     const log = (m: string) => console.error(m);
     const gateway = new MediaGateway({ providers, store, ledger, log: (m) => log(`  · ${m}`) });
-    const pipeline = new EpisodePipeline({ gateway, store, ledger, workDir: WORK_DIR, log, agentDeps: { log, queryFn: agentQueryFn(await agentEnv(store)) } });
+    const pipeline = new EpisodePipeline({ gateway, store, ledger, workDir: WORK_DIR, log, concurrency: pipelineConcurrency(), agentDeps: { log, queryFn: agentQueryFn(await agentEnv(store)) } });
     return samplesCommand({ pipeline, print: (l) => console.log(l) }, positionals.slice(2));
   }
 
@@ -275,7 +280,7 @@ async function main(): Promise<void> {
     const store = createStoreFromEnv(process.env);
     const log = (m: string) => console.error(m);
     const gateway = new MediaGateway({ providers, store, ledger, log: (m) => log(`  · ${m}`) });
-    const pipeline = new EpisodePipeline({ gateway, store, ledger, workDir: WORK_DIR, log, agentDeps: { log, queryFn: agentQueryFn(await agentEnv(store)) } });
+    const pipeline = new EpisodePipeline({ gateway, store, ledger, workDir: WORK_DIR, log, concurrency: pipelineConcurrency(), agentDeps: { log, queryFn: agentQueryFn(await agentEnv(store)) } });
     return bankCommand({ pipeline, store, print: (l) => console.log(l) }, positionals[1], positionals[2], values);
   }
 

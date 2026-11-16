@@ -1,4 +1,5 @@
 import { AgentError, toOutputSchema, type AgentCall, type AgentImage, type AgentResult } from "./runner.ts";
+import { vertexAccessToken, vertexUrl } from "./vertex.ts";
 import { z } from "zod";
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -21,12 +22,19 @@ function imagePart(image: AgentImage) { return { inlineData: { mimeType: image.m
 function pricePerMillion(name: string, fallback: number): number { const value = Number(process.env[name]); return Number.isFinite(value) && value >= 0 ? value : fallback; }
 
 export async function runGeminiStructured<T>(call: AgentCall<T>, model: string): Promise<AgentResult<T>> {
+  const vertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "1" || process.env.GOOGLE_GENAI_USE_VERTEXAI === "true";
   const key = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY;
-  if (!key) throw new AgentError("Gemini backend requires GEMINI_API_KEY", 0, model, call.name);
+  if (!vertex && !key) throw new AgentError("Gemini backend requires GEMINI_API_KEY or Vertex ADC", 0, model, call.name);
   const started = Date.now();
-  const response = await fetch(`${BASE}/${encodeURIComponent(model)}:generateContent`, {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (vertex) headers.authorization = `Bearer ${await vertexAccessToken()}`;
+  else headers["x-goog-api-key"] = key!;
+  const project = process.env.GOOGLE_CLOUD_PROJECT?.trim();
+  if (vertex && !project) throw new AgentError("Vertex backend requires GOOGLE_CLOUD_PROJECT", 0, model, call.name);
+  const location = process.env.GOOGLE_CLOUD_LOCATION?.trim() || "global";
+  const response = await fetch(vertex ? vertexUrl(project!, location, model) : `${BASE}/${encodeURIComponent(model)}:generateContent`, {
     method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": key },
+    headers,
     body: JSON.stringify({ systemInstruction: { parts: [{ text: call.system }] }, contents: [{ role: "user", parts: [...(call.images ?? []).map(imagePart), { text: call.prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: geminiSchema(toOutputSchema(call.schema)) } }),
   });
   const body = (await response.json()) as GeminiResponse;

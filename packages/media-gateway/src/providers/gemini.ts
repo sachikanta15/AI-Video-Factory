@@ -2,6 +2,7 @@ import { LocalizedError, msg, type Capability } from "@ys/core";
 import { toWav } from "../audio.ts";
 import { afterSubmit } from "../types.ts";
 import { fromBase64, pollUntil, requestBytes, requestJson, toBase64 } from "../http.ts";
+import { vertexAccessToken, vertexUrl } from "../vertex-auth.ts";
 import {
   ContentRejectedError,
   promptWithAvoid,
@@ -37,6 +38,24 @@ interface GeminiModelConfig {
   qualityPrior: number;
   price: PriceRule;
   priceSource?: PriceSource;
+  auth?: "aistudio" | "vertex";
+  project?: string;
+  location?: string;
+}
+
+async function geminiRequest(config: GeminiModelConfig, fetchFn: typeof fetch, body: unknown, signal?: AbortSignal) {
+  const vertex = config.auth === "vertex";
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  let url: string;
+  if (vertex) {
+    if (!config.project) throw new LocalizedError(msg("gw.gemini.vertexProject"));
+    headers.Authorization = `Bearer ${await vertexAccessToken()}`;
+    url = vertexUrl(config.project, config.location ?? "global", config.model);
+  } else {
+    headers["x-goog-api-key"] = config.apiKey;
+    url = `${BASE}/models/${config.model}:generateContent`;
+  }
+  return requestJson<GenerateContentResponse>(fetchFn, url, { method: "POST", headers, body: JSON.stringify(body), signal, timeoutMs: GENERATION_TIMEOUT_MS });
 }
 
 function inlineParts(res: GenerateContentResponse): InlineData[] {
@@ -78,23 +97,13 @@ export class GeminiImageAdapter implements ProviderAdapter {
       // generateContent'te olumsuz prompt alanı yok: kaçınılacaklar prompt'a "Avoid:" olarak eklenir.
       { text: promptWithAvoid(req.prompt, req.negativePrompt) ?? "" },
     ];
-    const res = await requestJson<GenerateContentResponse>(
-      ctx.fetch,
-      `${BASE}/models/${this.cfg.model}:generateContent`,
-      {
-        method: "POST",
-        headers: { "x-goog-api-key": this.cfg.apiKey, "Content-Type": "application/json" },
-        body: JSON.stringify({
+    const res = await geminiRequest(this.cfg, ctx.fetch, {
           contents: [{ role: "user", parts }],
           generationConfig: {
             responseModalities: ["IMAGE"],
             imageConfig: { aspectRatio: req.aspectRatio ?? "16:9" },
           },
-        }),
-        signal: ctx.signal,
-        timeoutMs: GENERATION_TIMEOUT_MS,
-      },
-    );
+        }, ctx.signal);
     const files: OutputFile[] = inlineParts(res).map((d) => ({ bytes: fromBase64(d.data), mimeType: d.mimeType }));
     return { files };
   }
@@ -121,23 +130,13 @@ export class GeminiTtsAdapter implements ProviderAdapter {
   }
 
   async generate(req: GenerationRequest, ctx: GenerateContext): Promise<GenerationResult> {
-    const res = await requestJson<GenerateContentResponse>(
-      ctx.fetch,
-      `${BASE}/models/${this.cfg.model}:generateContent`,
-      {
-        method: "POST",
-        headers: { "x-goog-api-key": this.cfg.apiKey, "Content-Type": "application/json" },
-        body: JSON.stringify({
+    const res = await geminiRequest(this.cfg, ctx.fetch, {
           contents: [{ parts: [{ text: req.prompt ? `${req.prompt}\n\n${req.text ?? ""}` : (req.text ?? "") }] }],
           generationConfig: {
             responseModalities: ["AUDIO"],
             speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: req.voiceId ?? this.defaultVoice } } },
           },
-        }),
-        signal: ctx.signal,
-        timeoutMs: GENERATION_TIMEOUT_MS,
-      },
-    );
+        }, ctx.signal);
     const audio = inlineParts(res)[0];
     // inlineParts boş listede zaten hata verir; bu satır yalnız tip daraltması için.
     /* v8 ignore next */

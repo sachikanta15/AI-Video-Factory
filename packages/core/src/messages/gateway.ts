@@ -44,6 +44,7 @@ export const GATEWAY_MESSAGES = {
     en: "Gemini returned no image ({reason}): {text}",
   },
   "gw.gemini.noAudio": { tr: "Gemini TTS ses döndürmedi", en: "Gemini TTS returned no audio" },
+  "gw.gemini.vertexProject": { tr: "Vertex için GOOGLE_CLOUD_PROJECT gerekli", en: "GOOGLE_CLOUD_PROJECT is required for Vertex" },
   "gw.veo.error": { tr: "Veo: {error}", en: "Veo: {error}" },
   "gw.veo.noVideo": { tr: "Veo video döndürmedi: {reasons}", en: "Veo returned no video: {reasons}" },
   "gw.comfy.error": { tr: "ComfyUI hata: {detail}", en: "ComfyUI error: {detail}" },
