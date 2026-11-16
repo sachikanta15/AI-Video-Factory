@@ -16,6 +16,7 @@ import {
   artDirector,
   castingDirector,
   director,
+  documentaryDirector,
   frameInspector,
   screenwriter,
   sceneCritic,
@@ -156,6 +157,7 @@ import { withKey } from "./key-prop.ts";
 import { nameTags } from "./name-tags.ts";
 import { addsNoDefect, withNarratedActions, withNarratedMoods } from "./narrated-action.ts";
 import { looksLikeFigure, looksLikeObject } from "./cast-kind.ts";
+import { choreographShots } from "./choreography.ts";
 import type { EpisodeReview } from "./state.ts";
 
 /** Günlük satırının önemi: aşama başlangıcı, uyarı (atlanan/başarısız alt adım) ya da bilgi. */
@@ -2988,6 +2990,13 @@ export class EpisodePipeline {
       const durations = Object.fromEntries(script.scenes.map((s) => [s.id, (voice[s.id]?.durationMs ?? 0) / 1000]));
       const motionMode = motionModeOf(state.input);
       if (motionMode === "vector") return this.vectorShots(state, durations);
+      if (!state.documentaryBlueprint && state.story) {
+        state.documentaryBlueprint = await this.agent(
+          state,
+          "shots",
+          documentaryDirector(state.story, script, state.input.targetSec, this.agentDeps),
+        );
+      }
       state.shotPlan = await this.agent(
         state,
         "shots",
@@ -2995,7 +3004,7 @@ export class EpisodePipeline {
           script,
           style,
           durations,
-          { aiClipRatio: state.input.aiClipRatio, motionMode, cast: state.cast },
+          { aiClipRatio: state.input.aiClipRatio, motionMode, cast: state.cast, blueprint: state.documentaryBlueprint },
           this.agentDeps,
         ),
       );
@@ -3004,6 +3013,7 @@ export class EpisodePipeline {
         script.scenes.map((s) => s.id),
         voice,
       );
+      state.shots = choreographShots(state.shots);
       // Tek tip hareket: ajan karıştırsa bile mod kesin uygulanır (stil/animasyon karışması göze batıyor).
       if (motionMode !== "mixed") {
         for (const s of state.shots) s.kind = motionMode === "animated" ? "ai_clip" : "still_motion";

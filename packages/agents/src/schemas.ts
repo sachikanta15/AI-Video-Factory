@@ -1,4 +1,4 @@
-import { Ambience, ShotIntent, ScriptClaim } from "@ys/core";
+import { Ambience, DocumentaryBlueprint, MultimodalVideoReview, ShotIntent, ScriptClaim } from "@ys/core";
 import { z } from "zod";
 
 export const StyleBibleOut = z.object({
@@ -106,6 +106,12 @@ export const ShotPlanOut = z.object({
   scenes: z.array(SceneShots),
 });
 export type ShotPlanOut = z.infer<typeof ShotPlanOut>;
+
+export const DocumentaryDirectorOut = DocumentaryBlueprint;
+export type DocumentaryDirectorOut = z.infer<typeof DocumentaryDirectorOut>;
+
+export const MultimodalVideoReviewOut = MultimodalVideoReview;
+export type MultimodalVideoReviewOut = z.infer<typeof MultimodalVideoReviewOut>;
 
 export const FrameIssue = z.object({
   type: z.enum([

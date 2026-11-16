@@ -6,7 +6,7 @@ import type { RenderAuditSummary } from "./render-audit.ts";
 import type { StyleComparison, StyleReference, styleSamples } from "./style-comparison.ts";
 import type { ArchiveImage, ArchiveCandidate } from "@ys/core";
 import type { CastOut, LessonTarget, MotionMode, ScriptOut, ShotPlanOut, StoryOut, StyleBibleOut } from "@ys/agents";
-import type { Ambience, AssetCheck, BudgetTier, FlagSpec, LineStyle, MapSpec, Msg, SceneBelow, ShotReviewRecord, Timeline, VectorShot, WordTiming } from "@ys/core";
+import type { Ambience, AssetCheck, BudgetTier, DocumentaryBlueprint, FlagSpec, LineStyle, MapSpec, Msg, MultimodalVideoReview, SceneBelow, ShotReviewRecord, Timeline, VectorShot, WordTiming } from "@ys/core";
 import { scenesBelow, stylePackOf } from "@ys/core";
 
 export type { MotionMode };
@@ -153,6 +153,7 @@ export interface PlannedShotState {
   imagePrompt: string;
   motionPrompt: string;
   camera: "push_in" | "pull_out" | "pan_left" | "pan_right" | "static";
+  cameraPreset?: import("@ys/core").CameraPreset;
   /** Eski planlarda yok; yoksa "none". */
   ambience?: Ambience;
   /** Vektör modunda sahne tarifi; varsa kare/klip üretilmez. */
@@ -250,6 +251,7 @@ export interface EpisodeState {
   agentCostUsd: number;
   style?: StyleBibleOut;
   story?: StoryOut;
+  documentaryBlueprint?: DocumentaryBlueprint;
   script?: ScriptOut;
   /** Son elle anlatım düzenlemesi: tam durum parmak izi eşleşirse kayıtlı önceki sürüme dönülebilir. */
   narrationEdit?: { id: string; at: string };
@@ -357,6 +359,7 @@ export interface EpisodeState {
   /** thumbnail: videonun yanındaki küçük resim (1280×720 JPEG), üretilebildiyse. */
   styleReference?: StyleReference;
   render?: { path: string; at: string; exportId?: string; thumbnail?: string; research?: ResearchSnapshotSummary; audit?: RenderAuditSummary; auditRanges?: { id: string; startSec: number; endSec: number }[]; typography?: Timeline["typography"]; styleReference?: StyleReference; styleSampling?: ReturnType<typeof styleSamples>; styleComparison?: StyleComparison; archiveSources?: { shotId: string; source: ArchiveCandidate; key: string; originalSha256?: string; downloadedAt?: string }[] };
+  multimodalReview?: MultimodalVideoReview;
 }
 
 /** Bu aşamaya geçmek için gereken onay (varsa). */

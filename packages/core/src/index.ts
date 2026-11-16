@@ -20,4 +20,5 @@ export * from "./image-profile.ts";
 export * from "./continuity.ts";
 export * from "./texture.ts";
 export * from "./likeness.ts";
+export * from "./documentary.ts";
 export * from "./messages/index.ts";

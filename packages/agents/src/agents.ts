@@ -1,10 +1,10 @@
 import { z } from "zod";
-import type { ResearchContext } from "@ys/core";
+import type { DocumentaryBlueprint, ResearchContext } from "@ys/core";
 import { researchPolicy, SCRIPT_CLAIM_POLICY, researchBlock } from "./research.ts";
 import { customStyleBlock } from "@ys/core";
 import { MOTION_DESIGN_POLICY, MOTION_REVIEW_POLICY, SHOT_INTENT_POLICY } from "./motion-design.ts";
 import { lessonsBlock, models, runStructured, type AgentDeps, type AgentImage, type AgentResult } from "./runner.ts";
-import { CastOut, FrameReviewOut, ScriptDoctorOut, ScriptOut, ShotPlanOut, StoryOut, StyleBibleOut } from "./schemas.ts";
+import { CastOut, DocumentaryDirectorOut, FrameReviewOut, MultimodalVideoReviewOut, ScriptDoctorOut, ScriptOut, ShotPlanOut, StoryOut, StyleBibleOut } from "./schemas.ts";
 
 /*
  * Model'e giden talimatlar İngilizce (görsel modeller de İngilizce prompt bekliyor);
@@ -255,7 +255,7 @@ export function director(
   script: ScriptOut,
   style: StyleBibleOut,
   sceneDurationsSec: Record<string, number>,
-  opts: { aiClipRatio: number; motionMode?: MotionMode; cast?: CastOut },
+  opts: { aiClipRatio: number; motionMode?: MotionMode; cast?: CastOut; blueprint?: DocumentaryBlueprint },
   deps?: AgentDeps,
 ): Promise<AgentResult<ShotPlanOut>> {
   const scenes = script.scenes
@@ -287,10 +287,23 @@ ${customStyleBlock(style)}
 - characterIds/locationId: tag every shot with the cast ids that appear in it, so reference images can be attached.
 - ambience: a subtle animated overlay that makes still_motion shots feel alive. It must match what is in the frame: "rain"/"snow" only outdoors in that weather, "fog" for night, mist or mystery, "dust" for old rooms, workshops, attics, "embers" near fire or forges, "flicker" for candle/lamp/screen light, "rays" for sunlight through windows or trees, "confetti" only for a celebration moment (a launch, a win, a record). Use "none" when nothing fits; keep the same ambience across shots of one location and moment.
 Visual style for reference: ${style.artStyle}.`,
-      prompt: cast + scenes,
+      prompt: `${opts.blueprint ? `Documentary blueprint:\n${JSON.stringify(opts.blueprint, null, 2)}\n\n` : ""}${cast}${scenes}`,
     },
     deps,
   );
+}
+
+export function documentaryDirector(story: StoryOut, script: ScriptOut, targetSec: number, deps?: AgentDeps): Promise<AgentResult<DocumentaryDirectorOut>> {
+  return runStructured({
+    name: "documentary-director",
+    model: models().creative,
+    effort: "high",
+    schema: DocumentaryDirectorOut,
+    system: `You are the documentary director for a cinematic mythology explainer.
+Build a production blueprint before shot planning. Do not add factual claims absent from the supplied story and script.
+Assign every supplied scene to exactly one act. Protect the cold-open question, then use setup, escalation, a reveal or turn, payoff and reflection where supported. Choose visual motifs that can recur as deliberate callbacks without repeating compositions. Continuity rules must cover recurring characters, locations, props, time of day and sacred iconography. Audio cues are editorial intentions only; do not claim that audio was rendered. Return JSON only.`,
+    prompt: `Target duration: ${targetSec} seconds\nStory:\n${JSON.stringify(story, null, 2)}\nScript:\n${JSON.stringify(script, null, 2)}`,
+  }, deps);
 }
 
 export interface FrameReviewInput {
@@ -335,4 +348,26 @@ ${refList}`,
     },
     deps,
   );
+}
+
+export interface VideoReviewInput {
+  renderId: string;
+  frames: AgentImage[];
+  transcript: string;
+  shotMap: string;
+  audioMeasured: boolean;
+}
+
+/** Reviews sampled rendered frames together with the transcript; technical audits remain separate evidence. */
+export function multimodalVideoReviewer(input: VideoReviewInput, deps?: AgentDeps): Promise<AgentResult<MultimodalVideoReviewOut>> {
+  return runStructured({
+    name: "multimodal-video-reviewer",
+    model: models().creative,
+    effort: "high",
+    schema: MultimodalVideoReviewOut,
+    images: input.frames,
+    system: `You are the final editorial reviewer for a rendered documentary video. You receive ordered sampled frames, a transcript and a shot/time map.
+Judge only evidence visible in the supplied sequence and transcript. Check visual-to-narration match, action timing, continuity, repeated compositions, transitions, subtitle timing and whether narration/audio evidence is available. Do not infer pronunciation or mix quality from pixels. If audio was not measured, keep audio findings advisory and say so. A technical render audit is not semantic approval. Return timecoded findings with targeted shot regeneration suggestions and a five-part score.`,
+    prompt: `Render id: ${input.renderId}\nSampled frames: ${input.frames.length}\nAudio measured: ${input.audioMeasured}\nShot/time map:\n${input.shotMap}\nTranscript:\n${input.transcript}`,
+  }, deps);
 }
