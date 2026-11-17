@@ -180,7 +180,10 @@ export async function runStructured<T>(call: AgentCall<T>, deps: AgentDeps = {})
 
 async function runOnce<T>(call: AgentCall<T>, deps: AgentDeps): Promise<AgentResult<T>> {
   const backend = process.env.YS_AGENT_BACKEND?.trim().toLowerCase();
-  const model = backend === "gemini" ? process.env.GEMINI_AGENT_MODEL?.trim() || "gemini-4-hydrogen" : modelFor(call.name, call.model, deps.models);
+  const budgetProfile = process.env.YS_COST_PROFILE?.trim().toLowerCase() === "budget";
+  const model = backend === "gemini"
+    ? process.env.GEMINI_AGENT_MODEL?.trim() || (budgetProfile ? process.env.GEMINI_AGENT_CHEAP_MODEL?.trim() || "gemini-3.8-flash" : "gemini-4-hydrogen")
+    : modelFor(call.name, call.model, deps.models);
   deps.log?.(`ajan: ${call.name} (${model})`);
   if (backend === "gemini") return runGeminiStructured(call, model);
   const queryFn = deps.queryFn ?? query;

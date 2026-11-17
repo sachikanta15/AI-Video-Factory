@@ -3034,6 +3034,12 @@ export class EpisodePipeline {
 
       const qaOn = state.input.qa !== false;
       const redraws = this.deps.qaRedraws ?? 1;
+      const budgetProfile = process.env.YS_COST_PROFILE?.trim().toLowerCase() === "budget";
+      // In budget mode, inspect one representative frame per scene. Every shot is still generated;
+      // Remotion supplies the continuity through camera choreography and still motion.
+      const qaShotIds = budgetProfile
+        ? new Set(shots.filter((shot, i) => i === 0 || shot.sceneId !== shots[i - 1]!.sceneId).map((shot) => shot.id))
+        : undefined;
       state.qa ??= {};
       const qa = state.qa;
 
@@ -3056,7 +3062,7 @@ export class EpisodePipeline {
           }
           attempts = attempt;
           const ref = { key: res.files[0]!.key, mimeType: res.files[0]!.mimeType };
-          const review = qaOn ? await this.inspect(state, shot, ref, attempt) : undefined;
+          const review = qaOn && (!qaShotIds || qaShotIds.has(shot.id)) ? await this.inspect(state, shot, ref, attempt) : undefined;
           if (!best || frameRank(review) > frameRank(best.qa)) best = { ref, qa: review };
           this.log(
             msg("log.keyframe.done", {

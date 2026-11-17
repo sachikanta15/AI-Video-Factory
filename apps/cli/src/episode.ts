@@ -95,7 +95,10 @@ export async function episodeCommand(
     case "new": {
       if (!args.topic) throw new Error("--topic gerekli");
       const minutes = positive("--minutes", args.minutes ?? 3);
-      const budget = positive("--budget", args.budget ?? 10);
+      const defaultBudget = process.env.YS_COST_PROFILE?.trim().toLowerCase() === "budget"
+        ? process.env.YS_DEFAULT_EPISODE_BUDGET_USD ?? "4"
+        : "10";
+      const budget = positive("--budget", args.budget ?? defaultBudget);
       const clips = Number(args.clips ?? 0);
       if (!Number.isFinite(clips) || clips < 0 || clips > 1) throw new Error("--clips 0 ile 1 arasında olmalı");
       const state = await pipeline.create({

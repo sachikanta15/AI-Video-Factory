@@ -349,8 +349,10 @@ export function estimateEpisode(state: EpisodeState, ctx: EstimateContext, modeO
   });
   // Kare denetimi: her kareye bir görsel model çağrısı, reddedilenler bir kez yeniden çizilir.
   const qaOn = state.input.qa !== false;
-  const draws = shotCount * (qaOn ? 1 + QA.redrawRate : 1);
-  const checks = qaOn ? draws : 0;
+  const budgetProfile = process.env.YS_COST_PROFILE?.trim().toLowerCase() === "budget";
+  const qaShots = budgetProfile ? new Set((state.shots ?? []).map((shot) => shot.sceneId)).size : shotCount;
+  const draws = shotCount + (qaOn ? qaShots * QA.redrawRate : 0);
+  const checks = qaOn ? (budgetProfile ? qaShots * (1 + QA.redrawRate) : draws) : 0;
   if (!vector) add({
     stage: "keyframes",
     providerId: kf.providerId,

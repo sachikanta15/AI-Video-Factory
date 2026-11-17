@@ -267,6 +267,9 @@ export function director(
   const cast = opts.cast
     ? `Cast (reference images exist for these; use their ids):\n${opts.cast.characters.map((c) => `- ${c.id} ${c.name}: ${c.role}`).join("\n")}\n${opts.cast.locations.map((l) => `- ${l.id} ${l.name}`).join("\n")}\n\n`
     : "";
+  const budgetGuidance = process.env.YS_COST_PROFILE?.trim().toLowerCase() === "budget"
+    ? "\n- Cost profile: prefer 4–8 shots per minute and hold a strong composition longer; create a new shot only for a meaningful change in action, location, subject or narrative beat. Use camera choreography and still_motion rather than splitting every sentence into a new image."
+    : "";
 
   return runStructured(
     {
@@ -279,6 +282,7 @@ Rules:
 - For every scene, split the narration into shots by giving the word index where each shot starts. The first shot of a scene starts at 0; indices strictly increase.
 - Estimate shot length from scene duration / word count. Cut on meaning, not mid-phrase.
 ${MOTION_RULES[opts.motionMode ?? "mixed"](opts.aiClipRatio)}
+${budgetGuidance}
 ${MOTION_DESIGN_POLICY}
 ${SHOT_INTENT_POLICY}
 ${customStyleBlock(style)}

@@ -90,7 +90,8 @@ export function createProvidersFromEnv(
     const auth = vertexReady ? "vertex" as const : "aistudio" as const;
     const project = env.GOOGLE_CLOUD_PROJECT;
     const location = env.GOOGLE_CLOUD_LOCATION ?? "global";
-    providers.push(
+    const budgetProfile = env.YS_COST_PROFILE?.trim().toLowerCase() === "budget";
+    if (!budgetProfile || env.GEMINI_ENABLE_PREMIUM_IMAGE === "1") providers.push(
       new GeminiImageAdapter({
         id: "gemini:nano-banana-pro",
         model: env.GEMINI_IMAGE_MODEL ?? "gemini-3-pro-image",
@@ -99,6 +100,8 @@ export function createProvidersFromEnv(
         price: { unit: "per_output", usd: 0.134 },
         priceSource: { url: GEMINI_PRICING, checked: "2026-10-18", note: "1K–2K; 4K $0.24" }, auth, project, location,
       }),
+    );
+    providers.push(
       new GeminiImageAdapter({
         id: "gemini:nano-banana-2.1",
         model: env.GEMINI_IMAGE_CHEAP_MODEL ?? "gemini-nano-banana-2.1",
